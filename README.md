@@ -1,161 +1,28 @@
 # Dataviz_Mx
 Este código es una aplicación Shiny en R que permite visualizar y analizar datos de víctimas de incidencia delictiva en México.
+
 # Visualización Interactiva de Incidencia Delictiva con Shiny
 
 ## Descripción General
 Esta aplicación, desarrollada en **Shiny para R**, permite la exploración interactiva de datos de incidencia delictiva en México a través de filtros por entidad, concepto, tipo de delito y rango de años. Los resultados se presentan en **gráficos interactivos** (con *Plotly*) y una **tabla dinámica**, con la opción de descargar los datos filtrados en formato CSV.
 
-El diseño de la interfaz está personalizado con un esquema visual que incluye el color **guinda**, representativo del Gobierno de México. Este proyecto representa mi primera incursión en **Shiny**, permitiéndome fortalecer mis habilidades en **RStudio** y visualización de datos.
+El diseño de la interfaz está personalizado con un esquema visual que incluye el color **guinda**, representativo del Gobierno de México. Este proyecto representa mi primera aplicación desarrollada en **Shiny**, me permitió fortalecer mis habilidades en **RStudio** y en visualización de datos.
 
 ---
 
-## Instalación y Configuración
+## Visualización de Víctimas de Incidencia Delictiva en México
 
-### Requisitos
-La aplicación requiere los siguientes paquetes de R:
-- **shiny**: Para crear la aplicación web interactiva.
-- **ggplot2**: Para generar gráficos estáticos.
-- **dplyr**: Para manipular y filtrar datos.
-- **DT**: Para mostrar tablas interactivas.
-- **readr**: Para leer el archivo CSV.
-- **shinythemes**: Para aplicar un tema visual predefinido.
-- **plotly**: Para convertir los gráficos en interactivos.
+Este repositorio contiene una aplicación desarrollada en R utilizando el paquete Shiny para la visualización de datos sobre víctimas de incidencia delictiva en México. La aplicación permite la exploración de datos a través de filtros interactivos, gráficos y tablas de datos.
 
-Para instalar los paquetes necesarios, ejecute en R:
-```r
-# Instalar paquetes si no están instalados
-required_packages <- c("shiny", "ggplot2", "dplyr", "DT", "readr", "shinythemes", "plotly")
-new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
-if(length(new_packages)) install.packages(new_packages)
+## Archivos principales
 
-# Cargar paquetes
-lapply(required_packages, library, character.only = TRUE)
-```
-
----
-
-## Carga y Preparación de Datos
-
-1. Se carga un archivo CSV (`IDEFF_dic24.csv`) con datos de incidencia delictiva, utilizando `read_csv` con codificación *latin1* para manejar caracteres especiales.
-2. Se realiza una transformación de datos:
-   - Se crea una columna `Total` que suma las víctimas mensuales.
-   - Se seleccionan las columnas clave: **AÑO, ENTIDAD, LEY, CONCEPTO, TIPO, Total**.
-
-```r
-# Cargar datos
-archivo <- "IDEFF_dic24.csv"
-datos <- read_csv(archivo, locale = locale(encoding = "latin1"))
-
-# Transformar datos
-datos <- datos %>% 
-  mutate(Total = rowSums(select(., starts_with("MES")), na.rm = TRUE)) %>%
-  select(AÑO, ENTIDAD, LEY, CONCEPTO, TIPO, Total)
-```
-
----
-
-## Interfaz de Usuario (UI)
-
-La interfaz está construida con `fluidPage()` y usa el tema *flatly* de **shinythemes**. Se incluyen:
-
-- **Controles de filtrado**: Selectores para entidad, concepto, tipo de delito y rango de años.
-- **Gráficos interactivos**:
-  - Un **gráfico de barras** para visualizar tendencias de víctimas.
-  - Un **gráfico de líneas** para variaciones temporales.
-- **Tabla dinámica** con los datos filtrados.
-- **Botón de descarga** para exportar los datos en CSV.
-- **Sección de ayuda** con instrucciones.
-
----
-
-## Lógica del Servidor (Server)
-
-El servidor maneja:
-
-- **Filtrado de datos**: Se crea un objeto reactivo (`filteredData`).
-- **Generación de visualizaciones**:
-  - **Gráfico de barras** (ggplot2 + plotly).
-  - **Gráfico de líneas** interactivo.
-- **Tabla interactiva** con `DT::datatable()`.
-- **Descarga de datos filtrados** en CSV.
-
-```r
-# Filtrado de datos
-data_filtered <- reactive({
-  datos %>%
-    filter(
-      ENTIDAD %in% input$entidad,
-      CONCEPTO %in% input$concepto,
-      TIPO %in% input$tipo,
-      AÑO >= input$anio[1], AÑO <= input$anio[2]
-    )
-})
-```
-
----
-
-## Personalización Visual
-
-Se aplican estilos CSS para mejorar la apariencia:
-- **Colores personalizados** en botones y gráficos.
-- **Tipografía y estilos** para mejorar la legibilidad.
-- **Incorporación de un logotipo** del Gobierno de México.
-
----
-
-## Funcionalidad Adicional
-
-- **Manejo de datos vacíos**: Mensajes personalizados en caso de falta de datos.
-- **Interactividad avanzada** con `plotly`.
-- **Accesibilidad**: Sección de ayuda clara y concisa.
-
----
-
-## Referencias
-
-- Blog de Bastián Olea Herrera: [https://bastianolea.rbind.io/apps/](https://bastianolea.rbind.io/apps/)
-- Documentación de Shiny: [https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/](https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/)
-- Videos en YouTube sobre Shiny y visualización de datos.
-
----
-
-## Próximos Pasos
-
-
-
-Mis planes de mejora incluyen:
-- Optimizar las visualizaciones.
-- Incorporar más tipos de gráficos.
-- Mejorar el rendimiento para grandes volúmenes de datos.
-
----
-
-## Fuente de Datos
-
-Los datos provienen del **Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública**
-
-## Código completo
-
-# Instalar paquetes necesarios si no están instalados
-required_packages <- c("shiny", "ggplot2", "dplyr", "DT", "readr", "shinythemes", "plotly")
-for (pkg in required_packages) {
-  if (!require(pkg, character.only = TRUE)) {
-    install.packages(pkg)
-  }
-}
+## Archivo ui.R
 
 library(shiny)
-library(ggplot2)
-library(dplyr)
-library(DT)
-library(readr)
 library(shinythemes)
 library(plotly)
-
-# Cargar datos
-data <- read_csv("~/Downloads/IDEFF_dic24.csv", locale = locale(encoding = "latin1")) %>%
-  mutate(Total = rowSums(select(., ENERO:DICIEMBRE))) %>%
-  select(AÑO, ENTIDAD, LEY, CONCEPTO, TIPO, Total)
+library(DT)
+library(ggplot2)
 
 ui <- fluidPage(
   theme = shinytheme("flatly"),
@@ -186,12 +53,12 @@ ui <- fluidPage(
         border-color: #600000;
       }
       .btn-info {
-        background-color: #800000;  /* Cambiado a guinda */
+        background-color: #800000;  /* Color guinda */
         border-color: #800000;
         color: #FFFFFF;  /* Texto blanco */
       }
       .btn-info:hover {
-        background-color: #600000;  /* Guinda más oscuro al pasar el mouse */
+        background-color: #600000;  /* Guinda más oscuro */
         border-color: #600000;
       }
 
@@ -227,14 +94,17 @@ ui <- fluidPage(
     )
   ),
   
-  titlePanel(span("Visualización de Víctimas de Incidencia Delictiva en México", style = "color: #800000; font-weight: bold;")),
+  titlePanel(
+    span("Visualización de Víctimas de Incidencia Delictiva en México", 
+         style = "color: #800000; font-weight: bold;")
+  ),
   
   sidebarLayout(
     sidebarPanel(
-      selectInput("state1", "Selecciona la primera Entidad:", choices = c("", "Todos", unique(data$ENTIDAD))),
-      selectInput("state2", "Selecciona la segunda Entidad:", choices = c("", "Todos", unique(data$ENTIDAD))),
-      selectInput("concept", "Por concepto:", choices = c("", "Seleccionar", unique(data$CONCEPTO))),
-      selectInput("crimeType", "Por tipo de delito:", choices = c("", "Seleccionar", unique(data$TIPO))),
+      selectInput("state1", "Selecciona la primera Entidad:", choices = ""),
+      selectInput("state2", "Selecciona la segunda Entidad:", choices = ""),
+      selectInput("concept", "Por concepto:", choices = ""),
+      selectInput("crimeType", "Por tipo de delito:", choices = ""),
       sliderInput("yearRange", "Rango de Años:", 
                   min = 2012, max = 2024, value = c(2012, 2024), step = 1, sep = ""),
       
@@ -250,11 +120,11 @@ ui <- fluidPage(
         tabPanel("Ayuda",
                  h3("Cómo usar la aplicación", style = "color: #800000;"),
                  p("Esta aplicación permite analizar los datos de víctimas de incidencia delictiva en México.", style = "color: #800000;"),
-                 p("1. Selecciona las dos entidades, el concepto y el tipo de delito que deseas analizar.", style = "color: #800000;"),
+                 p("1. Selecciona las dos entidades, el concepto y/o el tipo de delito que deseas analizar.", style = "color: #800000;"),
                  p("2. Usa el rango de años para filtrar los datos.", style = "color: #800000;"),
                  p("3. Haz clic en los filtros para aplicar los cambios.", style = "color: #800000;"),
-                 p("4. Explora los gráficos y la tabla de datos filtrados.", style = "color: #800000;"),
-                 p("5. Puedes descargar los datos filtrados haciendo clic en 'Descargar Datos Filtrados'.", style = "color: #800000;"))
+                 p("4. Explora las gráficas y la tabla de datos filtrados.", style = "color: #800000;"),
+                 p("5. Puedes descargar los datos filtrados haciendo clic en Descargar Datos Filtrados.", style = "color: #800000;"))
       )
     )
   ),
@@ -263,23 +133,60 @@ ui <- fluidPage(
     style = "text-align: center; padding: 20px; font-size: 12px; color: #800000;",
     "Fuente: Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.",
     br(),
-    "Aplicación creada con Shiny de Rstudio por José César Romero Galván."
+    "Aplicación creada con Shiny de Rstudio por José César Romero Galván",
+    tags$a(
+      href = "https://github.com/CesarRomero10/Dataviz_Mx/blob/main/README.md",
+      "disponible en el repositorio de GitHub"
+    )
   )
 )
 
+
+## Archivo server.R
+
+library(shiny)
+library(shinythemes)
+library(plotly)
+library(DT)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(stringr)  # Para usar str_to_title()
+
+# Leer los datos y transformar los nombres de las entidades
+datos <- read_csv("IDEFF_dic24.csv", locale = locale(encoding = "latin1")) %>%
+  mutate(Total = rowSums(select(., ENERO:DICIEMBRE))) %>%
+  select(AÑO, ENTIDAD, LEY, CONCEPTO, TIPO, Total) %>%
+  mutate(
+    ENTIDAD = str_to_title(ENTIDAD),  # Convertir ENTIDAD a formato "Primera Letra Mayúscula"
+    CONCEPTO = str_to_title(CONCEPTO),  # Convertir CONCEPTO a formato "Primera Letra Mayúscula"
+    TIPO = str_to_title(TIPO)  # Convertir TIPO a formato "Primera Letra Mayúscula"
+  )
+
 server <- function(input, output, session) {
   
-  # Datos filtrados
+  # Actualizar opciones de los selectInput
+  updateSelectInput(session, "state1", choices = c("", "Todos", unique(datos$ENTIDAD)))
+  updateSelectInput(session, "state2", choices = c("", "Todos", unique(datos$ENTIDAD)))
+  updateSelectInput(session, "concept", choices = c("", "Seleccionar", unique(datos$CONCEPTO)))
+  updateSelectInput(session, "crimeType", choices = c("", "Seleccionar", unique(datos$TIPO)))
+  
+  # Filtrar datos según los inputs
   filteredData <- reactive({
-    df <- data %>%
+    df <- datos %>%
       filter(AÑO >= input$yearRange[1] & AÑO <= input$yearRange[2])
     
+    selectedStates <- c()
     if (input$state1 != "" && input$state1 != "Todos") {
-      df <- df %>% filter(ENTIDAD == input$state1)
+      selectedStates <- c(selectedStates, input$state1)
     }
     if (input$state2 != "" && input$state2 != "Todos") {
-      df <- df %>% filter(ENTIDAD == input$state2)
+      selectedStates <- c(selectedStates, input$state2)
     }
+    if (length(selectedStates) > 0) {
+      df <- df %>% filter(ENTIDAD %in% selectedStates)
+    }
+    
     if (input$concept != "" && input$concept != "Seleccionar") {
       df <- df %>% filter(CONCEPTO == input$concept)
     }
@@ -287,21 +194,23 @@ server <- function(input, output, session) {
       df <- df %>% filter(TIPO == input$crimeType)
     }
     
-    return(df)
+    df
   })
   
-  # Gráfico 1: Tendencia de Víctimas por Año y Estado
+  # Gráfico 1: Barras
   output$dynamicPlot1 <- renderPlotly({
     df <- filteredData()
-    p <- ggplot(df, aes(x = as.factor(AÑO), y = Total, fill = ENTIDAD)) +
+    p <- ggplot(df, aes(x = as.factor(AÑO), y = Total, fill = ENTIDAD, 
+                        text = paste("Año:", AÑO, "<br>Víctimas:", Total, "<br>Entidad:", ENTIDAD))) +
       geom_bar(stat = "identity", position = "dodge") +
       theme_minimal() +
-      theme(legend.position = "bottom") + 
-      labs(title = "Tendencia de Víctimas por Año y Estado", x = "Año", y = "Número de Víctimas")
-    ggplotly(p)
+      theme(legend.position = "bottom") +
+      labs(title = "Número de Víctimas por Año y Estado", 
+           x = "Año", y = "Número de Víctimas", fill = "Entidad")  # Cambiar etiqueta de la leyenda
+    ggplotly(p, tooltip = "text")
   })
   
-  # Gráfico 2: Número de Víctimas por Entidad
+  # Gráfico 2: Líneas
   output$dynamicPlot2 <- renderPlotly({
     df <- filteredData() %>%
       group_by(AÑO, ENTIDAD) %>%
@@ -312,20 +221,21 @@ server <- function(input, output, session) {
                layout(title = "No hay datos para las entidades seleccionadas."))
     }
     
-    p <- ggplot(df, aes(x = AÑO, y = Total, color = ENTIDAD, group = ENTIDAD)) +
+    p <- ggplot(df, aes(x = AÑO, y = Total, color = ENTIDAD, group = ENTIDAD,
+                        text = paste("Año:", AÑO, "<br>Víctimas:", Total, "<br>Entidad:", ENTIDAD))) +
       geom_line() +
       theme_minimal() +
-      labs(title = "Número de Víctimas por Entidad", 
-           x = "Año", y = "Número de Víctimas", color = "Entidad")
-    ggplotly(p)
+      labs(title = "Tendencia de Víctimas por Entidad", 
+           x = "Año", y = "Número de Víctimas", color = "Entidad")  # Cambiar etiqueta de la leyenda
+    ggplotly(p, tooltip = "text")
   })
   
-  # Tabla de Datos Filtrados
+  # Tabla de datos
   output$table <- renderDT({
     datatable(filteredData(), options = list(pageLength = 10))
   })
   
-  # Lógica para descargar los datos filtrados
+  # Descargar datos filtrados
   output$downloadData <- downloadHandler(
     filename = function() {
       paste("datos_filtrados_", Sys.Date(), ".csv", sep = "")
@@ -336,5 +246,24 @@ server <- function(input, output, session) {
   )
 }
 
-# Ejecutar la aplicación
-shinyApp(ui = ui, server = server)
+
+## Fuente de Datos
+
+Los datos utilizados provienen del Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.
+
+## Referencias 
+
+Blog de Bastián Olea Herrera: https://bastianolea.rbind.io/apps/
+
+Cuenta de X de Rosana Ferrero: @RosanaFerrero
+
+Documentación de Shiny: https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/
+
+Canales de YouTube: Ravinder Ram y Academatica
+
+Autor
+
+Aplicación creada por José César Romero Galván.
+
+
+
