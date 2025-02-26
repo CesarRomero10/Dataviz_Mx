@@ -347,10 +347,8 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # Estado reactivo para alternar entre gráficas de pastel y anillos
-  pieGraphType <- reactiveVal("donut")  # Por defecto, inicia con gráfica de anillos
+  pieGraphType <- reactiveVal("donut")  
   
-  # Actualizar el tipo de gráfica al hacer clic en el botón
   observeEvent(input$togglePieGraph, {
     if (pieGraphType() == "donut") {
       pieGraphType("pie")
