@@ -1,8 +1,8 @@
-
 install.packages(c("shiny", "ggplot2", "dplyr", "DT", "readr", 
                    "shinythemes", "plotly", "rsconnect", "scales", 
                    "RColorBrewer", "shinyWidgets", "webshot2"), 
                  repos = "https://cran.rstudio.com/")
+
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -16,7 +16,6 @@ library(RColorBrewer)
 library(shinyWidgets)
 library(webshot2)
 
-# Cargar datos y transformar las columnas a mayúscula inicial y minúsculas
 data <- read_csv("IDEFF_dic24.csv", locale = locale(encoding = "latin1")) %>%
   mutate(Total = rowSums(select(., ENERO:DICIEMBRE))) %>%
   select(AÑO, ENTIDAD, LEY, CONCEPTO, TIPO, Total) %>%
@@ -44,7 +43,6 @@ data <- read_csv("IDEFF_dic24.csv", locale = locale(encoding = "latin1")) %>%
     Tipo = tools::toTitleCase(tolower(Tipo))
   )
 
-# Definir paleta de colores para todas las entidades (33 colores únicos: Nacional + 32 entidades federativas)
 entity_colors <- c(
   "Nacional" = "white",
   "Aguascalientes" = "#FF4500",
@@ -176,7 +174,14 @@ ui <- fluidPage(
         margin-bottom: 20px;
       }
       #dropdown_bar_filter > button, #dropdown_trend_filter > button, #dropdown_trend_states > button {
-        color: #0e5135 !important;
+        background-color: #0e5135 !important;
+        border-color: #0e5135 !important;
+        color: #d4ce46 !important;
+      }
+      #dropdown_bar_filter > button:hover, #dropdown_trend_filter > button:hover, #dropdown_trend_states > button:hover {
+        background-color: #0d9263 !important;
+        border-color: #0d9263 !important;
+        color: #d4ce46 !important;
       }
     "))
   ),
@@ -268,15 +273,16 @@ ui <- fluidPage(
     column(12, 
            tags$h3("Distribución de Víctimas de Incidencia Delictiva", style = "color: #d4ce46; font-weight: normal; text-align: center;"),
            tags$p("Distribución acumulada de víctimas desde 2012 hasta 2024 por entidad, tipo de delito y concepto.", 
-                  style = "color: #FFFFFF; font-size: 14px; text-align: center;")
+                  style = "color: #FFFFFF; font-size: 14px; text-align: center;"),
+           tags$div(class = "button-group",
+                    actionButton("togglePieGraph", "Cambiar a Pastel/Anillos", class = "btn-info")
+           )
     ),
     column(4,
            tags$div(class = "pie-box",
                     tags$h4("Por entidad", style = "color: #d4ce46; font-weight: normal; text-align: center;"),
                     tags$p("Distribución porcentual de víctimas por entidad acumulada desde 2012 hasta 2024.", 
                            style = "color: #FFFFFF; font-size: 14px; text-align: center;"),
-                    tags$p("Fuente: Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.", 
-                           style = "color: #FFFFFF; font-size: 12px; text-align: center;"),
                     tags$div(class = "button-group",
                              downloadButton("downloadGraphPieState", "Descargar gráfica", class = "download-graph-btn"),
                              downloadButton("download_pie_entidad", "Descargar datos", class = "download-btn")
@@ -290,8 +296,6 @@ ui <- fluidPage(
                     tags$h4("Por tipo de delito", style = "color: #d4ce46; font-weight: normal; text-align: center;"),
                     tags$p("Distribución porcentual de víctimas por tipo de delito acumulada desde 2012 hasta 2024.", 
                            style = "color: #FFFFFF; font-size: 14px; text-align: center;"),
-                    tags$p("Fuente: Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.", 
-                           style = "color: #FFFFFF; font-size: 12px; text-align: center;"),
                     tags$div(class = "button-group",
                              downloadButton("downloadGraphPieTipo", "Descargar gráfica", class = "download-graph-btn"),
                              downloadButton("download_pie_tipo", "Descargar datos", class = "download-btn")
@@ -305,8 +309,6 @@ ui <- fluidPage(
                     tags$h4("Por concepto", style = "color: #d4ce46; font-weight: normal; text-align: center;"),
                     tags$p("Distribución porcentual de víctimas por concepto acumulada desde 2012 hasta 2024.", 
                            style = "color: #FFFFFF; font-size: 14px; text-align: center;"),
-                    tags$p("Fuente: Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.", 
-                           style = "color: #FFFFFF; font-size: 12px; text-align: center;"),
                     tags$div(class = "button-group",
                              downloadButton("downloadGraphPieConcepto", "Descargar gráfica", class = "download-graph-btn"),
                              downloadButton("download_pie_concepto", "Descargar datos", class = "download-btn")
@@ -334,7 +336,7 @@ ui <- fluidPage(
       "Fuente de los datos: Secretariado Ejecutivo del Sistema Nacional de Seguridad Pública.",
       tags$br(),
       "Código fuente de esta app y del procesamiento de los datos disponible en",
-      tags$a(href = "https://github.com/CesarRomero10/Incidencia_Delictiva", target = "_blank", "GitHub")
+      tags$a(href = "https://github.com/CesarRomero10/Dataviz_Mx", target = "_blank", "GitHub")
     ),
     tags$div(
       style = "text-align: center; margin-top: 20px; margin-bottom: 20px;",
@@ -344,6 +346,20 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  
+  # Estado reactivo para alternar entre gráficas de pastel y anillos
+  pieGraphType <- reactiveVal("donut")  # Por defecto, inicia con gráfica de anillos
+  
+  # Actualizar el tipo de gráfica al hacer clic en el botón
+  observeEvent(input$togglePieGraph, {
+    if (pieGraphType() == "donut") {
+      pieGraphType("pie")
+      updateActionButton(session, "togglePieGraph", label = "Cambiar a Anillos")
+    } else {
+      pieGraphType("donut")
+      updateActionButton(session, "togglePieGraph", label = "Cambiar a Pastel")
+    }
+  })
   
   observe({
     if (input$bar_filter_type == "concepto") {
@@ -615,17 +631,31 @@ server <- function(input, output, session) {
       return(p)
     }
     
-    plot_ly(df, labels = ~Entidad, values = ~Total, type = 'pie',
-            textinfo = 'label+percent', insidetextorientation = 'radial',
-            marker = list(colors = pie_colors[1:nrow(df)]),
-            showlegend = FALSE,
-            height = 500) %>%
-      layout(margin = list(t = 100),
-             plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    if (pieGraphType() == "donut") {
+      p <- plot_ly(df, labels = ~Entidad, values = ~Total, type = 'pie', hole = 0.6,
+                   textinfo = 'label+percent', insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    } else {
+      p <- plot_ly(df, labels = ~Entidad, values = ~Total, type = 'pie',
+                   textinfo = 'label+percent', insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    }
+    
+    p
   })
   
   output$downloadGraphPieState <- downloadHandler(
-    filename = function() { "grafica_pie_entidad.png" },
+    filename = function() { 
+      if (pieGraphType() == "donut") "grafica_anillos_entidad.png" else "grafica_pie_entidad.png" 
+    },
     content = function(file) {
       df <- filteredDataEntity() %>%
         group_by(Entidad) %>%
@@ -641,18 +671,35 @@ server <- function(input, output, session) {
           theme(plot.background = element_rect(fill = "#494b4b"), 
                 panel.background = element_rect(fill = "#494b4b"))
       } else {
-        p <- ggplot(df, aes(x = "", y = Total, fill = Entidad)) +
-          geom_bar(stat = "identity", width = 1) +
-          coord_polar("y", start = 0) +
-          scale_fill_manual(values = pie_colors[1:nrow(df)]) +
-          theme_void() +
-          theme(
-            plot.background = element_rect(fill = "#494b4b"),
-            panel.background = element_rect(fill = "#494b4b"),
-            legend.position = "none"
-          ) +
-          geom_text(aes(label = paste0(Entidad, "\n", round(Percentage, 1), "%")), 
-                    position = position_stack(vjust = 0.5), color = "white", size = 3)
+        if (pieGraphType() == "donut") {
+          p <- ggplot(df, aes(x = 2, y = Total, fill = Entidad)) +
+            geom_bar(stat = "identity", width = 1, color = "#494b4b") +
+            coord_polar("y", start = 0) +
+            geom_bar(data = df, aes(x = 1.5, y = 0), stat = "identity", fill = "#494b4b") +  # Agujero central
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Entidad, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3) +
+            xlim(0.5, 2.5)  # Ajustar los límites para que el agujero sea visible
+        } else {
+          p <- ggplot(df, aes(x = "", y = Total, fill = Entidad)) +
+            geom_bar(stat = "identity", width = 1) +
+            coord_polar("y", start = 0) +
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Entidad, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3)
+        }
       }
       
       ggsave(file, plot = p, device = "png", width = 9, height = 5, dpi = 300)
@@ -686,17 +733,33 @@ server <- function(input, output, session) {
       return(p)
     }
     
-    plot_ly(df, labels = ~Tipo, values = ~Total, type = 'pie',
-            textinfo = 'label+percent', insidetextorientation = 'radial',
-            marker = list(colors = pie_colors[1:nrow(df)]),
-            showlegend = FALSE,
-            height = 500) %>%
-      layout(margin = list(t = 100),
-             plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    if (pieGraphType() == "donut") {
+      p <- plot_ly(df, labels = ~Tipo, values = ~Total, type = 'pie', hole = 0.6,
+                   textinfo = 'label+percent', textposition = 'inside',
+                   insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    } else {
+      p <- plot_ly(df, labels = ~Tipo, values = ~Total, type = 'pie',
+                   textinfo = 'label+percent', textposition = 'inside',
+                   insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    }
+    
+    p
   })
   
   output$downloadGraphPieTipo <- downloadHandler(
-    filename = function() { "grafica_pie_tipo.png" },
+    filename = function() { 
+      if (pieGraphType() == "donut") "grafica_anillos_tipo.png" else "grafica_pie_tipo.png" 
+    },
     content = function(file) {
       df <- filteredDataTipo() %>%
         group_by(Tipo) %>%
@@ -712,18 +775,35 @@ server <- function(input, output, session) {
           theme(plot.background = element_rect(fill = "#494b4b"), 
                 panel.background = element_rect(fill = "#494b4b"))
       } else {
-        p <- ggplot(df, aes(x = "", y = Total, fill = Tipo)) +
-          geom_bar(stat = "identity", width = 1) +
-          coord_polar("y", start = 0) +
-          scale_fill_manual(values = pie_colors[1:nrow(df)]) +
-          theme_void() +
-          theme(
-            plot.background = element_rect(fill = "#494b4b"),
-            panel.background = element_rect(fill = "#494b4b"),
-            legend.position = "none"
-          ) +
-          geom_text(aes(label = paste0(Tipo, "\n", round(Percentage, 1), "%")), 
-                    position = position_stack(vjust = 0.5), color = "white", size = 3)
+        if (pieGraphType() == "donut") {
+          p <- ggplot(df, aes(x = 2, y = Total, fill = Tipo)) +
+            geom_bar(stat = "identity", width = 1, color = "#494b4b") +
+            coord_polar("y", start = 0) +
+            geom_bar(data = df, aes(x = 1.5, y = 0), stat = "identity", fill = "#494b4b") +  # Agujero central
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Tipo, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3) +
+            xlim(0.5, 2.5)  # Ajustar los límites para que el agujero sea visible
+        } else {
+          p <- ggplot(df, aes(x = "", y = Total, fill = Tipo)) +
+            geom_bar(stat = "identity", width = 1) +
+            coord_polar("y", start = 0) +
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Tipo, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3)
+        }
       }
       
       ggsave(file, plot = p, device = "png", width = 9, height = 5, dpi = 300)
@@ -757,17 +837,31 @@ server <- function(input, output, session) {
       return(p)
     }
     
-    plot_ly(df, labels = ~Concepto, values = ~Total, type = 'pie',
-            textinfo = 'label+percent', insidetextorientation = 'radial',
-            marker = list(colors = pie_colors[1:nrow(df)]),
-            showlegend = FALSE,
-            height = 500) %>%
-      layout(margin = list(t = 100),
-             plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    if (pieGraphType() == "donut") {
+      p <- plot_ly(df, labels = ~Concepto, values = ~Total, type = 'pie', hole = 0.6,
+                   textinfo = 'label+percent', insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    } else {
+      p <- plot_ly(df, labels = ~Concepto, values = ~Total, type = 'pie',
+                   textinfo = 'label+percent', insidetextorientation = 'radial',
+                   marker = list(colors = pie_colors[1:nrow(df)]),
+                   showlegend = FALSE,
+                   height = 500) %>%
+        layout(margin = list(t = 100),
+               plot_bgcolor = "#494b4b", paper_bgcolor = "#494b4b")
+    }
+    
+    p
   })
   
   output$downloadGraphPieConcepto <- downloadHandler(
-    filename = function() { "grafica_pie_concepto.png" },
+    filename = function() { 
+      if (pieGraphType() == "donut") "grafica_anillos_concepto.png" else "grafica_pie_concepto.png" 
+    },
     content = function(file) {
       df <- filteredDataConcepto() %>%
         group_by(Concepto) %>%
@@ -783,18 +877,35 @@ server <- function(input, output, session) {
           theme(plot.background = element_rect(fill = "#494b4b"), 
                 panel.background = element_rect(fill = "#494b4b"))
       } else {
-        p <- ggplot(df, aes(x = "", y = Total, fill = Concepto)) +
-          geom_bar(stat = "identity", width = 1) +
-          coord_polar("y", start = 0) +
-          scale_fill_manual(values = pie_colors[1:nrow(df)]) +
-          theme_void() +
-          theme(
-            plot.background = element_rect(fill = "#494b4b"),
-            panel.background = element_rect(fill = "#494b4b"),
-            legend.position = "none"
-          ) +
-          geom_text(aes(label = paste0(Concepto, "\n", round(Percentage, 1), "%")), 
-                    position = position_stack(vjust = 0.5), color = "white", size = 3)
+        if (pieGraphType() == "donut") {
+          p <- ggplot(df, aes(x = 2, y = Total, fill = Concepto)) +
+            geom_bar(stat = "identity", width = 1, color = "#494b4b") +
+            coord_polar("y", start = 0) +
+            geom_bar(data = df, aes(x = 1.5, y = 0), stat = "identity", fill = "#494b4b") +  # Agujero central
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Concepto, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3) +
+            xlim(0.5, 2.5)  # Ajustar los límites para que el agujero sea visible
+        } else {
+          p <- ggplot(df, aes(x = "", y = Total, fill = Concepto)) +
+            geom_bar(stat = "identity", width = 1) +
+            coord_polar("y", start = 0) +
+            scale_fill_manual(values = pie_colors[1:nrow(df)]) +
+            theme_void() +
+            theme(
+              plot.background = element_rect(fill = "#494b4b"),
+              panel.background = element_rect(fill = "#494b4b"),
+              legend.position = "none"
+            ) +
+            geom_text(aes(label = paste0(Concepto, "\n", round(Percentage, 1), "%")), 
+                      position = position_stack(vjust = 0.5), color = "white", size = 3)
+        }
       }
       
       ggsave(file, plot = p, device = "png", width = 9, height = 5, dpi = 300)
@@ -830,6 +941,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
-
-
-
